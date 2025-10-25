@@ -1,0 +1,1 @@
+for b in /dev/block/sd* /dev/block/mmcblk* /dev/sd* /dev/mmcblk* /dev/vd*; do if blockdev --setro "$b"; then echo "Set device: $b, read and write properties successfully"; else echo "Set device: $b, read and write properties failed😨"; fi; done
