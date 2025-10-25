@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 void setup_seccomp_filter() {
     scmp_filter_ctx ctx;
@@ -54,6 +55,8 @@ void setup_seccomp_filter() {
         // SCMP_SYS(blockdev), // 块设备读写开关，无这个类
         SCMP_SYS(chmod), // 修改权限
         SCMP_SYS(chown), // 修改所有者
+        SCMP_SYS(fchmodat),   // glibc
+        SCMP_SYS(fchownat),   // glibc
         // SCMP_SYS(chattr), // 无这个类，懒得实现（true）
         SCMP_SYS(utime), // 修改时间
         SCMP_SYS(utimes), // 修改时间
@@ -110,7 +113,7 @@ void setup_seccomp_filter() {
         fprintf(stderr, "seccomp加载失败😢\n");
         exit(55);
     } else {
-        fprintf(stdout, "seccomp加载成功😋\n");
+        // fprintf(stdout, "seccomp加载成功😋\n");
     }
     
     seccomp_release(ctx);
@@ -118,15 +121,16 @@ void setup_seccomp_filter() {
 
 int main(int argc, char *argv[]) {
 
-    int status = system("for b in /dev/block/sd* /dev/block/mmcblk* /dev/sd* /dev/mmcblk* /dev/vd*; do if blockdev --setro \"$b\"; then echo \"设置设备：$b，只读属性成功\"; else echo \"设置设备：$b，只读属性失败😨\"; fi; done");
-    if (status != 0) {
+    struct stat st;
+    if (stat("/dev/device_read_only", &st) != 0 || !S_ISREG(st.st_mode)) {
+        fprintf(stderr, "你得先执行“块设备读写切换.sh”以启用基础保护\n");
         return(EXIT_FAILURE);
     }
 
     setup_seccomp_filter();
 
     if (argc < 2) {
-        system("exec /bin/sh");
+        execlp("sh", "sh", NULL);
     } else {
         execvp(argv[1], &argv[1]);
         perror("执行失败🥴");
