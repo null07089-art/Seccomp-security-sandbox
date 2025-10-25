@@ -1,1 +1,0 @@
-for b in /dev/block/sd* /dev/block/mmcblk* /dev/sd* /dev/mmcblk* /dev/vd*; do if blockdev --setro "$b"; then echo "设置设备：$b，读写属性成功"; else echo "设置设备：$b，读写属性失败😨"; fi; done
