@@ -1,52 +1,55 @@
-# Seccomp 安全沙箱使用于各种Linux、Android
+# Seccomp安全执行器适用于各种Linux发行版、Android&Root
 ```
-使用 seccomp 来限制系统调用并防止对系统进行有害操作的 Linux 安全沙箱实现。
+功能：使用 seccomp 来限制系统调用并防止对系统进行有害操作的 Linux 安全执行实现。
 
-## 🛡️ 特点
+# 🛡️数据保护
+    - **文件删除保护**：阻止与文件删除相关的系统调用，例如“unlink”、“unlinkat”、“rmdir”、“rename”
+    - **文件创建保护**：防止通过“mknod”、“mknodat”创建设备节点
+    - **文件属性保护**：限制文件修改系统调用，包括`chmod`、`chown`、`utime`
+    - **IO 控制保护**：完全阻止 `ioctl` 系统调用
 
-### 安全保护
-- **文件删除保护**：阻止与文件删除相关的系统调用，例如“unlink”、“unlinkat”、“rmdir”、“rename”
-- **文件创建保护**：防止通过“mknod”、“mknodat”创建设备节点
-- **文件属性保护**：限制文件修改系统调用，包括`chmod`、`chown`、`utime`
-- **IO 控制保护**：完全阻止 `ioctl` 系统调用
-
-### 存储保护
-- 自动将所有块设备设置为只读模式（`/dev/block/sd*`、`/dev/block/mmcblk*`、...）
-- 防止对存储设备进行写操作
-
-## 🚀 快速入门
-
-### 先决条件
-- GCC编译器
-- libseccomp 开发库
+# 🛡️存储保护
+    - 自动将所有块设备设置为只读模式（`/dev/block/sd*`、`/dev/block/mmcblk*`、...）
+    - 防止对存储设备进行写操作
 ```
 
-### 安装
+### 安装&构建
 ```bash
-# 克隆存储库
-git clone <存储库-url>
-cd seccomp-沙箱
+    # 安装 libseccomp 开发库
+    # 在 Linux 上安装 libseccomp 开发库 的方法取决于你使用的发行版。以下是主流系统的安装方式：
 
-# 编译程序
-gcc seccomp.c -lseccomp -o seccomp_sandbox
+    # Debian/Ubuntu
+    sudo apt-get update
+    sudo apt-get install libseccomp-dev
+
+    # CentOS / RHEL / openEuler
+    sudo yum install libseccomp-devel
+
+    # Fedora
+    sudo dnf install libseccomp-devel
+
+    # 或者下载源码编译
+    wget https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
+    tar -xvf libseccomp-2.5.5.tar.gz
+    cd libseccomp-2.5.5
+    ./configure
+    make
+    sudo make install
+    sudo ldconfig
+
+    # 编译程序
+    gcc main.c -lseccomp
 ```
 
 ### 用法
 启动交互式shell
 ```bash
-./seccomp_sandbox
+./a.out
 ```
 
 运行特定命令
 ```bash
-./seccomp_sandbox <命令> [参数...]
-```
-
-### 示例：
-```bash
-./seccomp_sandbox ls -la
-./seccomp_sandbox python3 script.py
-./seccomp_sandbox bash -c "your_script.sh"
+./a.out <命令> [参数...]
 ```
 
 ### 🔧 技术细节
@@ -72,7 +75,7 @@ IO 控制 ioctl EPERM
 · ioctl 被完全阻止，这可能会导致依赖终端功能的程序出现意外行为
 · 标准 I/O 操作（文件描述符 0-2）不受影响
 · 需要足够的权限才能将块设备设置为只读
-· 非常适合运行不受信任代码的安全沙箱场景
+· 非常适合运行不受信任代码的安全执行场景
 
 🐛 错误处理
 
@@ -93,7 +96,7 @@ IO 控制 ioctl EPERM
 int main() {
     setup_seccomp_filter();
     // 并安全地执行你的命令
-    system(“./seccomp_sandbox your_app”)；
+    system(“./a.out <argv>”)；
     return 0；
 }
 ```
@@ -102,7 +105,7 @@ int main() {
 
 1. 检查您是否拥有所需的权限：
 ```bash
-sudo ./seccomp_sandbox
+sudo ./a.out
 ```
 
 2. 验证 libseccomp 是否已安装：
@@ -112,8 +115,8 @@ ldconfig -p | ldconfig -p | grep libseccomp
 
 3. 先用简单的命令测试一下：
 ```bash
-./seccomp_sandbox chmod +x seccomp_sandbox
-chmod: 'seccomp_sandbox': 不允许的操作
+./a.out chmod -x a.out
+chmod: 'a.out': 不允许的操作
 ```
 
 ### 🤝 贡献
