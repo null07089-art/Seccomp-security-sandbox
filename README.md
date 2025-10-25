@@ -1,124 +1,123 @@
-```markdown
-# Seccomp security sandbox is used in various Linux and Android
+# Seccomp 安全沙箱使用于各种Linux、Android
+```
+使用 seccomp 来限制系统调用并防止对系统进行有害操作的 Linux 安全沙箱实现。
 
-A Linux security sandbox implementation that uses seccomp to restrict system calls and prevent harmful operations on the system.
+## 🛡️ 特点
 
-## 🛡️ Features
+### 安全保护
+- **文件删除保护**：阻止与文件删除相关的系统调用，例如“unlink”、“unlinkat”、“rmdir”、“rename”
+- **文件创建保护**：防止通过“mknod”、“mknodat”创建设备节点
+- **文件属性保护**：限制文件修改系统调用，包括`chmod`、`chown`、`utime`
+- **IO 控制保护**：完全阻止 `ioctl` 系统调用
 
-### Security Protection
-- **File Deletion Protection**: Blocks system calls related to file deletion, such as "unlink", "unlinkat", "rmdir", "rename"
-- **File Creation Protection**: Prevent device nodes from being created via "mknod", "mknodat"
-- **File Attribute Protection**: Restrict file modification system calls, including `chmod`, `chown`, `utime`
-- **IO Control Protection**: Completely block `ioctl` system calls
+### 存储保护
+- 自动将所有块设备设置为只读模式（`/dev/block/sd*`、`/dev/block/mmcblk*`、...）
+- 防止对存储设备进行写操作
 
-### Storage Protection
-- Automatically set all block devices to read-only mode (`/dev/block/sd*`, `/dev/block/mmcblk*`, ...)
-- Prevent writes to storage devices
+## 🚀 快速入门
 
-## 🚀 Quick Start
-
-### Prerequisites
-- GCC compiler
-- libseccomp development library
+### 先决条件
+- GCC编译器
+- libseccomp 开发库
 ```
 
-### Install
+### 安装
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd seccomp-sandbox
+# 克隆存储库
+git clone <存储库-url>
+cd seccomp-沙箱
 
-# Compiler
+# 编译程序
 gcc seccomp.c -lseccomp -o seccomp_sandbox
 ```
 
-### Usage
-# Start interactive shell
+### 用法
+启动交互式shell
 ```bash
 ./seccomp_sandbox
 ```
 
-#Run specific commands
+运行特定命令
 ```bash
-./seccomp_sandbox <command> [parameters...]
+./seccomp_sandbox <命令> [参数...]
 ```
 
-### Example:
+### 示例：
 ```bash
 ./seccomp_sandbox ls -la
 ./seccomp_sandbox python3 script.py
 ./seccomp_sandbox bash -c "your_script.sh"
 ```
 
-### 🔧 Technical details
+### 🔧 技术细节
 ```
-blocked system call
+被阻止的系统调用
 
-Category System Call Error Code
-Delete operations unlink, unlinkat, rmdir, rename, renameat, renameat2 EPERM
-Create operations mknod, mknodat EPERM
-Modification operations chmod, chown, utime, utimes, utimensat EPERM
-IO control ioctl EPERM
+类别 系统调用 错误代码
+删除操作 unlink、unlinkat、rmdir、rename、renameat、renameat2 EPERM
+创建操作 mknod、mknodat EPERM
+修改操作 chmod、chown、utime、utimes、utimensat EPERM
+IO 控制 ioctl EPERM
 
-Workflow
+工作流程
 
-1. Device protection: Set all block devices to read-only mode on startup
-2. Filter initialization: Create a seccomp context with the default allow all policy
-3. Rule addition: Add blocking rules for specific system calls
-4. Filter Loading: Load the configured filter into the kernel
-5. Command execution: execute the target command or start a shell in a protected environment
+1. 设备保护：启动时将所有块设备设置为只读模式
+2. 过滤器初始化：使用默认的允许所有策略创建 seccomp 上下文
+3.规则添加：添加特定系统调用的阻止规则
+4. Filter Loading：将配置好的filter加载到内核中
+5.命令执行：在受保护的环境中执行目标命令或启动shell
 
-⚠️Important Tips
+⚠️重要提示
 
-· ioctl is completely blocked, which may cause unexpected behavior in programs that rely on terminal functionality
-· Standard I/O operations (file descriptors 0-2) are not affected
-· Requires sufficient permissions to set a block device to read-only
-· Ideal for secure sandbox scenarios where untrusted code runs
+· ioctl 被完全阻止，这可能会导致依赖终端功能的程序出现意外行为
+· 标准 I/O 操作（文件描述符 0-2）不受影响
+· 需要足够的权限才能将块设备设置为只读
+· 非常适合运行不受信任代码的安全沙箱场景
 
-🐛 Error handling
+🐛 错误处理
 
-The program will exit with an error message if:
+在以下情况下，程序将退出并显示错误消息：
 
-· Seccomp initialization failed
-· Failed to add system call rules
-· Seccomp filter failed to load
-· Block device read-only setting failed
+· Seccomp初始化失败
+· 系统调用规则添加失败
+· Seccomp过滤器加载失败
+· 块设备只读设置失败
 ```
 
-###📝 Code Example
+### 📝 代码示例
 
 ```c
-//Basic usage in code
-#include "seccomp.h" // Remove the main function
+// 代码中的基本用法
+#include“seccomp.h” // 去掉main函数
 
 int main() {
     setup_seccomp_filter();
-    // and execute your commands safely
-    system(“./seccomp_sandbox your_app”);
-    return 0;
+    // 并安全地执行你的命令
+    system(“./seccomp_sandbox your_app”)；
+    return 0；
 }
 ```
 
-###🔍 Debugging, if you have problems:
+### 🔍 调试，如果您遇到问题：
 
-# 1. Check that you have the required permissions:
+1. 检查您是否拥有所需的权限：
 ```bash
 sudo ./seccomp_sandbox
 ```
 
-# 2. Verify that libseccomp is installed:
+2. 验证 libseccomp 是否已安装：
 ```bash
 ldconfig -p | ldconfig -p | grep libseccomp
 ```
 
-# 3. Test it with a simple command first:
+3. 先用简单的命令测试一下：
 ```bash
 ./seccomp_sandbox chmod +x seccomp_sandbox
-chmod: 'seccomp_sandbox': not allowed operation
+chmod: 'seccomp_sandbox': 不允许的操作
 ```
 
-### 🤝 Contribute
-# Contributions welcome! Please feel free to submit pull requests or raise issues for bugs and feature requests.
+### 🤝 贡献
+欢迎贡献！请随时提交拉取请求或针对错误和功能请求提出问题。
 
-### 📄 License
-# This project is open source and available under the MIT license.
+### 📄 许可证
+该项目是开源的，可根据 MIT 许可证使用。
